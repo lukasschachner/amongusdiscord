@@ -12,9 +12,9 @@ import (
 	"github.com/denverquane/amongusdiscord/game"
 )
 
-func helpResponse(CommandPrefix string) string {
+func helpResponse(version, CommandPrefix string) string {
 	buf := bytes.NewBuffer([]byte{})
-	buf.WriteString("Among Us Bot command reference:\n")
+	buf.WriteString(fmt.Sprintf("Among Us Bot Commands (v%s):\n", version))
 	buf.WriteString("Having issues or have suggestions? Join the discord at <https://discord.gg/ZkqZSWF>!\n")
 	buf.WriteString(fmt.Sprintf("`%s help` or `%s h`: Print help info and command usage.\n", CommandPrefix, CommandPrefix))
 	buf.WriteString(fmt.Sprintf("`%s new` or `%s n`: Start the game in this text channel. Accepts room code and region as arguments. Ex: `%s new CODE eu`. Also works for restarting.\n", CommandPrefix, CommandPrefix, CommandPrefix))
@@ -41,11 +41,21 @@ func (guild *GuildState) trackChannelResponse(channelName string, allChannels []
 	return fmt.Sprintf("No channel found by the name %s!\n", channelName)
 }
 
-func (guild *GuildState) linkPlayerResponse(args []string) {
+func (guild *GuildState) linkPlayerResponse(s *discordgo.Session, args []string) {
+
+	g, err := s.State.Guild(guild.PersistentGuildData.GuildID)
+	if err != nil {
+		log.Println(err)
+	}
 
 	userID, err := extractUserIDFromMention(args[0])
 	if err != nil {
 		log.Printf("Invalid mention format for \"%s\"", args[0])
+	}
+
+	_, added := guild.checkCacheAndAddUser(g, s, userID)
+	if !added {
+		log.Println("No users found in Discord for userID " + userID)
 	}
 
 	combinedArgs := strings.ToLower(strings.Join(args[1:], ""))
